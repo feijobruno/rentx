@@ -1,45 +1,33 @@
-import { Category } from "../../entities/Category";
-import { categoriesRoutes } from "../../../../routes/categories.routes";
+import { getRepository, Repository } from 'typeorm';
 import { ICategoriesRepository, ICreateCategoryDTO } from "../ICategoriesRepository";
+import { categoriesRoutes } from "../../../../routes/categories.routes";
+import { Category } from "../../entities/Category";
 
 
-
-class CategoriesRepository implements ICategoriesRepository{
-    private categories: Category[];
-
-    // Singleton
-    private static INSTANCE: CategoriesRepository;
-
-    private constructor() {
-        this.categories = [];
+class CategoriesRepository implements ICategoriesRepository {
+    private repository: Repository<Category>; 
+ 
+    constructor() {
+      this.repository = getRepository(Category);
     }
-
-    public static getInstance(): CategoriesRepository{
-        if(!CategoriesRepository.INSTANCE){
-            CategoriesRepository.INSTANCE = new CategoriesRepository();
-        }
-        return CategoriesRepository.INSTANCE;
+  
+    async create({ name, description }: ICreateCategoryDTO): Promise<void> {
+      const category = this.repository.create({ name, description });
+  
+      await this.repository.save(category);
     }
-
-    create({ description, name }: ICreateCategoryDTO): void {
-        const category: Category = new Category();
-
-        Object.assign(category, {
-            name,
-            description,
-            created_at: new Date(),
-        });
-
-        this.categories.push(category);
+  
+    async list(): Promise<Category[]> {
+        const categories = await this.repository.find();
+        return categories;
     }
-
-    list(): Category[] {
-        return this.categories;
+  
+    async findByName(name: string): Promise<Category> {
+      // SELECT * from categories where name = "name" limit 1
+      const category = await this.repository.findOne({ where: { name } });
+  
+      return category;
     }
-
-    findByName(name:string): Category {
-        const category = this.categories.find( (category) => categoriesRoutes.name === name )
-        return category;
-    }
-}
-export { CategoriesRepository };
+  }
+  
+  export { CategoriesRepository };
